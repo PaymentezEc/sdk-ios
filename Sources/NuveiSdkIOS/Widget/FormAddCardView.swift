@@ -33,16 +33,23 @@ public struct FormAddCardView: View {
     public var onLoading: ((Bool) -> Void)?
        public var onSuccess: ((Bool, String) -> Void)?
        public var onError: ((ErrorModel) -> Void)?
+    private var userId: String
+    private var email: String
 
        
        public init(
            onLoading: ((Bool) -> Void)? = nil,
            onSuccess: ((Bool, String) -> Void)? = nil,
-           onError: ((ErrorModel) -> Void)? = nil
+           onError: ((ErrorModel) -> Void)? = nil,
+           userId: String,
+           email: String
+           
        ) {
            self.onLoading = onLoading
            self.onSuccess = onSuccess
            self.onError = onError
+           self.userId = userId
+           self.email = email
        }
     
     public var body: some View {
@@ -348,7 +355,7 @@ public struct FormAddCardView: View {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .replacingOccurrences(of: " ", with: "")
             let card: Card =  Card(holder_name: name, expiry_year: .int(year), expiry_month: .int(month), type: CardHelper.getCardInfo(for: cardNumber).typeCode, number: cleanedNumber, cvc: cvv,)
-            let user = User(id: "4", email: "erick.guillen@nuvei.com")
+            let user = User(id: userId, email: email)
             let cardBody = AddCardModel(user: user, card: card, extra_params: extraParams)
             let bodyRequest = try JSONEncoder().encode(cardBody)
             print("avanza a la peticion")
@@ -593,6 +600,6 @@ struct FormErrors {
 // MARK: - Preview (dentro de la librería)
 struct CardInputView_Previews: PreviewProvider {
     static var previews: some View {
-        FormAddCardView()
+        FormAddCardView(userId: "4", email: "")
     }
 }
