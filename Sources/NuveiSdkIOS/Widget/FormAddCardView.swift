@@ -209,21 +209,19 @@ public struct FormAddCardView: View {
                 
                 
                 Button(action: {
-                    log("1. Usuario presionó botón")
                     if validateForm(){
                         
                         
                         Task {
-                            log("2. Entró Task del botón (validateOtp=\(validateOtp))")
                             
                             if validateOtp {
-                                log("3. validateOtp = true → verificar OTP")
+                                
                                 try await verify(value: otpCode, type: "BY_OTP", transactionId: referenceId)
-                                log("4. verify() terminó")
+                                
                             } else {
-                                log("3. validateOtp = false → addCard()")
+                                
                                 try await addCard()
-                                log("4. addCard() terminó")
+                                
                             }
                         }
                     }
@@ -324,8 +322,6 @@ public struct FormAddCardView: View {
         onLoading?(true)
         do{
             
-            log("A1. addCard() start")
-         
             
             let env = try Environments.shared.getConfig()
             if !env.clientCode.isEmpty {
@@ -358,7 +354,7 @@ public struct FormAddCardView: View {
             let user = User(id: userId, email: email)
             let cardBody = AddCardModel(user: user, card: card, extra_params: extraParams)
             let bodyRequest = try JSONEncoder().encode(cardBody)
-            print("avanza a la peticion")
+            
             let response: AddCardResponse = try await service.makeRequest(methodHttp: "POST", endpoint: "/v2/card/add", body: bodyRequest, code: env.appCode, key: env.appKey)
             
             referenceId = response.card.transaction_reference ?? ""
@@ -408,14 +404,14 @@ public struct FormAddCardView: View {
     private func verify(value: String, type: String, transactionId : String)async throws{
         
         do{
-            log("V1. verify() start type=\(type)")
+            
             if type != "AUTHENTICATION_CONTINUE"{
                 onLoading?(true)
             }
             
             let env = try  Environments.shared.getConfig()
             let service = NuveiServices()
-            let user = User(id: "4")
+            let user = User(id: userId)
             let transaction = TransactionData(id: transactionId)
             let otpRequest = OtpRequest(type: type, value: value, more_info: true, user: user, transaction: transaction)
             let bodyRequest = try JSONEncoder().encode(otpRequest)
@@ -429,7 +425,7 @@ public struct FormAddCardView: View {
                     key: env.serverKey
                 )
             
-            print("llega aqu -----------------i \(type)")
+            
             onLoading?(false)
             switch type {
             case "BY_OTP":
