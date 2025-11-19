@@ -19,7 +19,7 @@ public struct OtpRequest: Codable, Sendable{
 public struct OtpResponse: Codable, Sendable {
     public let transaction: TransactionData
     public let card: Card
-    public let threeDS: ThreeDSData
+    public let threeDS: ThreeDSData?
 
     enum CodingKeys: String, CodingKey {
         case transaction

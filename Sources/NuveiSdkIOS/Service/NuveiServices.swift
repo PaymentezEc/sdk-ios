@@ -84,6 +84,8 @@ class NuveiServices{
         }
 
         if let jsonString = String(data: data, encoding: .utf8) {
+            print("METHOD: \(methodHttp)")
+            print("endpoint: \(components?.url)\(components?.path)")
             print("🔵 RAW RESPONSE:\n\(jsonString)")
         }
         return try JSONDecoder().decode(T.self, from: data)

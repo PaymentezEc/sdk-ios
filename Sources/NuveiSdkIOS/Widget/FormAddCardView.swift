@@ -14,7 +14,7 @@ public struct FormAddCardView: View {
     @State private var otpCode: String = ""
     @State private var otpCodeValid: Bool = true
     
-    @State private var alertMessage: String = ""
+    
     @State private var errors = FormErrors()
     
     
@@ -32,13 +32,13 @@ public struct FormAddCardView: View {
     @State private var validateOtp: Bool = false;
     public var onLoading: ((Bool) -> Void)?
        public var onSuccess: ((Bool, String) -> Void)?
-       public var onError: ((String) -> Void)?
+       public var onError: ((ErrorModel) -> Void)?
 
        
        public init(
            onLoading: ((Bool) -> Void)? = nil,
            onSuccess: ((Bool, String) -> Void)? = nil,
-           onError: ((String) -> Void)? = nil
+           onError: ((ErrorModel) -> Void)? = nil
        ) {
            self.onLoading = onLoading
            self.onSuccess = onSuccess
@@ -183,7 +183,7 @@ public struct FormAddCardView: View {
                     TextField("Otp Code", text: $otpCode)
                     
                         .keyboardType(.numberPad)
-                        .textContentType(.dateTime)
+                        .textContentType(.creditCardNumber)
                         .padding()
                         .background(Color(.secondarySystemBackground))
                         .cornerRadius(8)
@@ -202,17 +202,23 @@ public struct FormAddCardView: View {
                 
                 
                 Button(action: {
-                    
-                    Task {
-                        if validateForm() {
-                        if validateOtp{
-                            try await verify(value: otpCode, type: "BY_OTP", transactionId: referenceId)
-                        }else{
-                         
-                                        try await addCard()
-                                   }
-                        }
+                    log("1. Usuario presionó botón")
+                    if validateForm(){
                         
+                        
+                        Task {
+                            log("2. Entró Task del botón (validateOtp=\(validateOtp))")
+                            
+                            if validateOtp {
+                                log("3. validateOtp = true → verificar OTP")
+                                try await verify(value: otpCode, type: "BY_OTP", transactionId: referenceId)
+                                log("4. verify() terminó")
+                            } else {
+                                log("3. validateOtp = false → addCard()")
+                                try await addCard()
+                                log("4. addCard() terminó")
+                            }
+                        }
                     }
                 }) {
                     Text(validateOtp ? "Verify otp" :"Add Card")
@@ -249,8 +255,18 @@ public struct FormAddCardView: View {
     }
     
     private func validateForm() -> Bool {
-        var valid = true
+        
         errors = FormErrors()
+        
+        if validateOtp{
+            if otpCode.isEmpty{
+                errors.otp = "otp is not valid"
+                return false
+            }
+            return true
+        }
+        
+        var valid = true
         let cleanedNumber = cardNumber
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: " ", with: "")
@@ -289,12 +305,7 @@ public struct FormAddCardView: View {
         }
         
         
-        if validateOtp{
-            if otpCode.isEmpty{
-                errors.otp = "otp is not valid"
-                valid = false
-            }
-        }
+       
         
         
         return valid
@@ -306,7 +317,7 @@ public struct FormAddCardView: View {
         onLoading?(true)
         do{
             
-            
+            log("A1. addCard() start")
          
             
             let env = try Environments.shared.getConfig()
@@ -345,10 +356,21 @@ public struct FormAddCardView: View {
             
             referenceId = response.card.transaction_reference ?? ""
             switch response.transaction.status_detail {
+            case 7:
+                onLoading?(false)
+                if response.card.status == "valid"{
+                    onSuccess?(true, "Card Added Succesfully")
+                }else{
+                    onSuccess?(false,"Status: \(response.card.status ?? "rejected")" )
+                }
+                clearAllForm()
+            case 9:
+                onLoading?(false)
+                onSuccess?(false,"Status: \(response.card.status ?? "rejected")")
+                clearAllForm()
             case 31:
                 onLoading?(false)
                 validateOtp = true;
-                return;
             case 36:
                 onLoading?(false)
                 htmlContent = response.threeDS?.browser_response?.challenge_request ?? ""
@@ -356,10 +378,9 @@ public struct FormAddCardView: View {
             case 35:
                 try await Task.sleep(nanoseconds: 5_000_000_000)
                 try await verify(value: "", type: "AUTHENTICATION_CONTINUE", transactionId: referenceId)
-                
-            
             default:
-                onError?("Error in request")
+                onError?(ErrorModel(error: ErrorData(type: "Error in Request", help: "", description: "Status_detail: \(response.transaction.status_detail ?? 0)")))
+                //onError?("Error in request")
                 return
             }
     
@@ -367,11 +388,12 @@ public struct FormAddCardView: View {
             } catch let error as ErrorModel {
                 onLoading?(false)
                 print(error)
-                alertMessage = error.error.description.isEmpty ? error.error.type : error.error.description
-            } catch {
+                onError?(error)
+           } catch {
                 onLoading?(false)
                 print("eror aqui")
-        alertMessage = error.localizedDescription
+               onError?(ErrorModel(error: ErrorData(type: "Error in request", help: "", description: error.localizedDescription)))
+                //onError?(error.localizedDescription)
             }
     }
     
@@ -379,7 +401,7 @@ public struct FormAddCardView: View {
     private func verify(value: String, type: String, transactionId : String)async throws{
         
         do{
-            
+            log("V1. verify() start type=\(type)")
             if type != "AUTHENTICATION_CONTINUE"{
                 onLoading?(true)
             }
@@ -400,12 +422,13 @@ public struct FormAddCardView: View {
                     key: env.serverKey
                 )
             
-            print("llega aqui")
+            print("llega aqu -----------------i \(type)")
             onLoading?(false)
             switch type {
             case "BY_OTP":
                 switch response.transaction.status_detail {
                 case 31:
+                    print("entra aqui..........")
                     otpCode = ""
                     otpCodeValid = false
                     errors.otp = "Otp Code is not valid"
@@ -417,11 +440,11 @@ public struct FormAddCardView: View {
                     onSuccess?(true, "Card added succesfully")
                 case 33:
                     clearAllForm()
-                    onError?("Otp Code is not valid")
+                    //onError?("Otp Code is not valid")
                     validateOtp = false
                 default:
                     clearAllForm()
-                    onError?("Otp Code is not valid")
+                    onError?(ErrorModel(error: ErrorData(type: "Error in Request", help: "", description: "Status_detail: \(response.transaction.status_detail ?? 0)")))
                     validateOtp = false
                     
                 }
@@ -433,15 +456,16 @@ public struct FormAddCardView: View {
                     clearAllForm()
                     onSuccess?(true, "Card Added Succesfully")
                 case "pending":
-                    //3ds challengue
-                    return;
+                    onLoading?(false)
+                    htmlContent = response.threeDS?.browser_response?.challenge_request ?? ""
+                    showCresModal = true
                 case "failure":
                     clearAllForm()
-                    onError?("Error in request")
-                    validateOtp = false
+                    onSuccess?(false, "Status: failure")
+                    
                 default:
-                    onError?("Error in request")
-                    validateOtp = false
+                    onError?(ErrorModel(error: ErrorData(type: "Error in Request", help: "", description: "Status_detail: \(response.transaction.status_detail ?? 0)")))
+                    
                 }
                 
             case "BY_CRES":
@@ -451,22 +475,33 @@ public struct FormAddCardView: View {
                     onSuccess?(true, "Card Added Succesfully")
                 case "failure":
                     clearAllForm()
-                    onError?("Error in request")
-                    validateOtp = false
+                    onSuccess?(false, "Status: failure")
                 default:
                     clearAllForm()
-                    onError?("Error in request")
+                    onError?(ErrorModel(error: ErrorData(type: "Error in Request", help: "", description: "Status_detail: \(response.transaction.status_detail ?? 0)")))
+                    
                     validateOtp = false
                 }
             default:
-                onError?("Error in request")
+                onError?(ErrorModel(error: ErrorData(type: "Error in Request", help: "", description: "Status_detail: \(response.transaction.status_detail ?? 0)")))
+               
                 
             }
             
         } catch let error as ErrorModel {
             onLoading?(false)
+            print(error)
+            print("error del catch")
+            onError?(error)
             throw error
         } catch {
+            onError?(ErrorModel(
+                error: ErrorData(
+                    type: "RequestError",
+                    help: "",
+                    description: error.localizedDescription
+                )
+            ))
             onLoading?(false)
             throw ErrorModel(
                 error: ErrorData(
@@ -532,6 +567,16 @@ public struct FormAddCardView: View {
         cvv = ""
         otpCode = ""
         expires = ""
+    }
+    
+    func log(_ message: String) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss.SSS"
+
+        let time = formatter.string(from: Date())
+        let thread = Thread.isMainThread ? "MAIN" : "BG"
+
+        print("[\(time)][\(thread)] \(message)")
     }
 }
 
