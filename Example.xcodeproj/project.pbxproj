@@ -9,6 +9,7 @@
 /* Begin PBXFileReference section */
 		CF066B732ECA305A00D09AF7 /* Example.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Example.xcodeproj; sourceTree = "<group>"; };
 		CFEB053D2EBCE0010094D3CA /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CFF2583A2EF351DA00AD3366 /* Example.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Example.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -49,6 +50,13 @@
 			isa = PBXGroup;
 			children = (
 				CFEB053D2EBCE0010094D3CA /* Example.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CFF2583B2EF351DA00AD3366 /* Products */ = {
+			isa = PBXGroup;
+			children = (
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -106,6 +114,10 @@
 			productRefGroup = CFEB053E2EBCE0010094D3CA /* Products */;
 			projectDirPath = "";
 			projectReferences = (
+				{
+					ProductGroup = CFF2583B2EF351DA00AD3366 /* Products */;
+					ProjectRef = CFF2583A2EF351DA00AD3366 /* Example.xcodeproj */;
+				},
 				{
 					ProductGroup = CF066B742ECA305A00D09AF7 /* Products */;
 					ProjectRef = CF066B732ECA305A00D09AF7 /* Example.xcodeproj */;

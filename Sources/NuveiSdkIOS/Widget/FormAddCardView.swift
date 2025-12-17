@@ -338,8 +338,8 @@ public struct FormAddCardView: View {
                 cresReferenceId = referenceCres.id
             }
             let service = NuveiServices()
-            
-            let threeData: ThreeDS2_data = ThreeDS2_data(term_url: "https://nuvei-cres-dev-bkh4atahdegxa8dk.eastus-01.azurewebsites.net/api/cres/save/\(cresReferenceId)", device_type: "browser");
+            let urlCres = env.testMode ?"https://nuvei-cres-dev-bkh4atahdegxa8dk.eastus-01.azurewebsites.net/api": "https://cres.nuvei.com.ec/api";
+            let threeData: ThreeDS2_data = ThreeDS2_data(term_url:  "\(urlCres)/cres/save/\(cresReferenceId)", device_type: "browser");
             
             let browserInf: BrowserInfo? = await GlobalHelper.getBrowserInfo() ?? nil
             
@@ -383,6 +383,7 @@ public struct FormAddCardView: View {
                 try await verify(value: "", type: "AUTHENTICATION_CONTINUE", transactionId: referenceId)
             default:
                 onError?(ErrorModel(error: ErrorData(type: "Error in Request", help: "", description: "Status_detail: \(response.transaction.status_detail ?? 0)")))
+                onLoading?(false)
                 //onError?("Error in request")
                 return
             }
@@ -431,7 +432,6 @@ public struct FormAddCardView: View {
             case "BY_OTP":
                 switch response.transaction.status_detail {
                 case 31:
-                    print("entra aqui..........")
                     otpCode = ""
                     otpCodeValid = false
                     errors.otp = "Otp Code is not valid"
@@ -443,7 +443,7 @@ public struct FormAddCardView: View {
                     onSuccess?(true, "Card added succesfully")
                 case 33:
                     clearAllForm()
-                    //onError?("Otp Code is not valid")
+                    onError?(ErrorModel(error: ErrorData(type: "Error in request", help: "", description: "Otp Code is not valid")))
                     validateOtp = false
                 default:
                     clearAllForm()
@@ -459,7 +459,6 @@ public struct FormAddCardView: View {
                     clearAllForm()
                     onSuccess?(true, "Card Added Succesfully")
                 case "pending":
-                    onLoading?(false)
                     htmlContent = response.threeDS?.browser_response?.challenge_request ?? ""
                     showCresModal = true
                 case "failure":

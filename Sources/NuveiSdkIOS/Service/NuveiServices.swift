@@ -12,8 +12,8 @@ import Foundation
 class NuveiServices{
     private let URL_TEST = "https://ccapi-stg.paymentez.com"
     private let URL_PROD = "https://ccapi.paymentez.com"
-    private let URL_CRES = "https://nuvei-cres-dev-bkh4atahdegxa8dk.eastus-01.azurewebsites.net/api"
-    
+    private let URL_CRES_TEST = "https://nuvei-cres-dev-bkh4atahdegxa8dk.eastus-01.azurewebsites.net/api"
+    private let URL_CRES_PROD = "https://cres.nuvei.com.ec/api"
     
     func makeRequest<T: Decodable>(
         methodHttp: String,
@@ -30,7 +30,7 @@ class NuveiServices{
         
         let baseURL: String
         if isCress{
-            baseURL = URL_CRES
+            baseURL = config.testMode ?  URL_CRES_TEST : URL_CRES_PROD
         }else{
             baseURL = config.testMode ?  URL_TEST : URL_PROD
         }
